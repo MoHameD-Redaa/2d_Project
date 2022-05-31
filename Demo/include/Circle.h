@@ -95,26 +95,24 @@ void ModifiedMidpointCircle(HDC hdc, int xc, int yc, int r, COLORREF c)
     int x = 0;
     int y = r;
     int d = 1 - r;
-    int d1 = 3 ;
-    int d2 = 5 - 2*r ;
+    int c1 = 3 ;
+    int c2 = 5 - 2*r ;
     Draw8Points(hdc, xc, yc, x, y, c);
     while(x<y)
     {
         if(d<0)
         {
-            d += d1;
-            d1 += 2;
-            d2 += 2;
-            x++;
+            d += c1;
+            c2 += 2;
         }
         else
         {
-            d += d2;
-            d1 += 2;
-            d2 += 4;
-            x++;
+            d += c2;
+            c2 += 4;
             y--;
         }
+        d1 += 2;
+        x++;
         Draw8Points(hdc, xc, yc, x, y, c);
     }
 
