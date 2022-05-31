@@ -24,6 +24,7 @@ void Draw8Points(HDC hdc, int xc, int yc, int x, int y, COLORREF c)
 
 }
 
+
 void DirectCircle(HDC hdc, int xc, int yc, int r, COLORREF c)
 {
     int x = 0 ;
@@ -111,10 +112,78 @@ void ModifiedMidpointCircle(HDC hdc, int xc, int yc, int r, COLORREF c)
             c2 += 4;
             y--;
         }
-        d1 += 2;
+        c1 += 2;
         x++;
         Draw8Points(hdc, xc, yc, x, y, c);
     }
+}
+
+
+void FillCircleQuarter(HDC hdc, int xc, int yc, int x, int y, int quarter_num, COLORREF c)
+{
+    if(quarter_num == 1)
+    {
+        DDALine(hdc, xc, yc, xc + x, yc - y, c);
+        DDALine(hdc, xc, yc, xc + y, yc - x, c);
+    }
+    else if(quarter_num == 2)
+    {
+        DDALine(hdc, xc, yc, xc - x, yc - y, c);
+        DDALine(hdc, xc, yc, xc - y, yc - x, c);
+
+    }
+    else if(quarter_num == 3)
+    {
+        DDALine(hdc, xc, yc, xc - x, yc + y, c);
+        DDALine(hdc, xc, yc, xc - y, yc + x, c);
+
+    }
+    else if(quarter_num == 4)
+    {
+        DDALine(hdc, xc, yc, xc + x, yc + y, c);
+        DDALine(hdc, xc, yc, xc + y, yc + x, c);
+    }
+
+    SetPixel(hdc,xc + x, yc + y,c);
+    SetPixel(hdc,xc + x, yc - y,c);
+    SetPixel(hdc,xc - x, yc - y,c);
+    SetPixel(hdc,xc - x, yc + y,c);
+
+    SetPixel(hdc,xc + y, yc + x,c);
+    SetPixel(hdc,xc + y, yc - x,c);
+    SetPixel(hdc,xc - y, yc - x,c);
+    SetPixel(hdc,xc - y, yc + x,c);
 
 }
+
+
+void FillCircleWithLines(HDC hdc, int xc, int yc, int r, int quarter_num, COLORREF c)
+{
+    int x = 0;
+    int y = r;
+    int d = 1 - r;
+    int c1 = 3 ;
+    int c2 = 5 - 2*r ;
+    FillCircleQuarter(hdc, xc, yc, x, y, quarter_num, c);
+    while(x<y)
+    {
+        if(d<0)
+        {
+            d += c1;
+            c2 += 2;
+        }
+        else
+        {
+            d += c2;
+            c2 += 4;
+            y--;
+        }
+        c1 += 2;
+        x++;
+        FillCircleQuarter(hdc, xc, yc, x, y, quarter_num, c);
+    }
+
+}
+
+
 #endif // CIRCLE_H
