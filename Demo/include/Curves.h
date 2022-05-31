@@ -37,5 +37,18 @@ void DrawHermiteCurve(HDC hdc,Vector& p1, Vector& T1, Vector& p2, Vector& T2, CO
 }
 
 
+void DrawCardinalSpline(HDC hdc,Vector P[], int n, double c, int numpix)
+{
+    double c1 = 1 - c;
+    Vector T0(c1*(P[2].x - P[0].x), c1*(P[2].y - P[0].y));
+    for(int i = 2; i < n-1; i++)
+    {
+        Vector T1(c1*(P[i+1].x - P[i-1].x), c1*(P[i+1].y - P[i-1].y));
+        DrawHermiteCurve(hdc, P[i-1], T0, P[i], T1, numpix);
+        T0 = T1;
+    }
+}
+
+
 
 #endif // CURVES_H_INCLUDED
