@@ -1,6 +1,8 @@
 #ifndef LINE_H
 #define LINE_H
 #include <cmath>
+#include <iostream>
+using namespace std;
 
 void swap(int& x1, int& y1, int& x2, int& y2)
 {
@@ -54,6 +56,7 @@ void BresenhamLine(HDC hdc, int x1, int y1, int x2, int y2, COLORREF c)
     }
     else
     {
+        printf("in bresnham m inverse\n");
         if(y1 > y2)
             swap(x1, y1, x2, y2);
 
