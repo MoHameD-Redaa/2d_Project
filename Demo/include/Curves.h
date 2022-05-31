@@ -1,6 +1,10 @@
 #ifndef CURVES_H_INCLUDED
 #define CURVES_H_INCLUDED
 
+#include"Line.h"
+
+using namespace std;
+
 struct Vector
 {
     double v[2];
@@ -36,16 +40,40 @@ void DrawHermiteCurve(HDC hdc,Vector& p1, Vector& T1, Vector& p2, Vector& T2, CO
     }
 }
 
-
 void DrawCardinalSpline(HDC hdc,Vector P[], int n, COLORREF c)
 {
-    Vector T0(0.5*(P[2].x - P[0].x), 0.5*(P[2].y - P[0].y));
+    Vector T0(0.5*(P[2][0] - P[0][0]), 0.5*(P[2][1] - P[0][1]));
     for(int i = 2; i < n-1; i++)
     {
-        Vector T1(0.5*(P[i+1].x - P[i-1].x), 0.5*(P[i+1].y - P[i-1].y));
+        Vector T1(0.5*(P[i+1][0] - P[i-1][0]), 0.5*(P[i+1][1] - P[i-1][1]));
         DrawHermiteCurve(hdc, P[i-1], T0, P[i], T1, c);
         T0 = T1;
     }
+}
+
+
+void FillSquareWithHermit(HDC hdc, int x1, int y1, int length, COLORREF c) {
+	int x2 = x1 + length;
+
+	DDALine(hdc, x1, y1, x2, y1, c);
+
+	DDALine(hdc, x1, y1, x1, y1 + length, c);
+
+	DDALine(hdc, x1 + length, y1 + length, x1, y1 + length, c);
+
+	DDALine(hdc, x1 + length, y1 + length, x1 + length, y1, c);
+
+
+	while (x1 <= x2) {
+
+		Vector p1(x1, y1);
+		Vector T1(0,0);
+		Vector p2(x1, y1 + length);
+		Vector T2(0,0);
+		DrawHermiteCurve(hdc, p1, T1, p2, T2, c);
+		x1++;
+	}
+
 }
 
 
