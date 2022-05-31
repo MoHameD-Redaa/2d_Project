@@ -147,7 +147,7 @@ int APIENTRY WinMain(HINSTANCE hinst, HINSTANCE pinst, LPSTR cmd, int nsh)
 
 	wc.cbClsExtra = wc.cbWndExtra = 0;
     //Change the background of window to be white.
-	wc.hbrBackground = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
     //Change the shape of the mouse.
 	wc.hCursor = LoadCursor(NULL, IDC_CROSS);
 
