@@ -2,9 +2,13 @@
 #define CONVEXFILL_H_INCLUDED
 #include"FloodFill.h"
 #include <vector>
+#include <cmath>
+#include <Windows.h>
+
 using namespace std;
 
 #define EdgeTableSize 600
+#define INT_MAX 99999999
 
 struct EdgeTable
 {
@@ -49,16 +53,17 @@ void DrawScanLines(HDC hdc,EdgeTable table[],COLORREF color)
                 SetPixel(hdc,x,y,color);
 }
 
-void ConvexFill(HDC hdc,Vertex p[],int n,COLORREF color)
+//void ConvexFill(HDC hdc,Vertex p[],int n,COLORREF color)
+void ConvexFill(HDC hdc,vector<POINT> p,int n,COLORREF color)
 {
     EdgeTable *table = new EdgeTable[EdgeTableSize];
     InitEdgeTable(table);
-    Vertex v1=p[n-1];
+    Vertex v1(p[n-1].x, p[n-1].y);
     for(int i=0; i<n; i++)
     {
-        Vertex v2=p[i];
+        Vertex v2(p[i].x, p[i].y);
         EdgeToTable(v1,v2,table);
-        v1=p[i];
+        v1= *(new Vertex(p[i].x, p[i].y));
     }
     DrawScanLines(hdc,table,color);
     delete table;

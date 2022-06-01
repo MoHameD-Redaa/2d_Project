@@ -19,13 +19,13 @@ void IRecursiveFloodFill(HDC hdc, int x, int y, COLORREF borderColor, COLORREF f
     IRecursiveFloodFill(hdc, x, y - 1, borderColor, fillColor);
 }
 
-struct Vertex
+/* struct Vertex
 {
     int x, y;
     Vertex(int x, int y) :x(x), y(y)
     {
     }
-};
+}; */
 
 void NonRecursiveFloodFill(HDC hdc, int x, int y, COLORREF borderColor, COLORREF fillColor)
 {

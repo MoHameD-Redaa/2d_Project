@@ -151,11 +151,11 @@ bool InRight(Vertex &v, int edge)
 }
 bool InTop(Vertex &v, int edge)
 {
-    return v.y >= edge;
+    return v.y <= edge;
 }
 bool InBottom(Vertex &v, int edge)
 {
-    return v.y <= edge;
+    return v.y >= edge;
 }
 
 Vertex VIntersect(Vertex &v1, Vertex &v2, int xedge)
@@ -187,12 +187,72 @@ void PolygonClip(HDC hdc, vector<POINT> p, int n, int xleft, int ytop, int xrigh
     vlist=ClipWithEdge(vlist,ybottom,InBottom,HIntersect);
     Vertex v1=vlist[vlist.size()-1];
 
-    /* for (int i = 0; i < (int)vlist.size(); i++)
+    for (int i = 0; i < (int)vlist.size(); i++)
     {
         Vertex v2 = vlist[i];
         DDALine(hdc, Round(v1.x), Round(v1.y), Round(v2.x), Round(v2.y), COLOR);
         v1 = v2;
-    } */
+    }
 }
+
+
+
+bool isInsideCircle(int x, int y, int origX, int origY, int r)
+{
+    int dx = origX - x;
+    int dy = origY - y;
+    int dist = sqrt((dx*dx) + (dy*dy) );
+
+    return dist <= r ;
+}
+
+void line_CircleWin(HDC hdc, int x1, int y1, int x2, int y2, int origX, int origY, int r, COLORREF c)
+{
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+
+    if(abs(dy) <= abs(dx))
+    {
+        if(x1 > x2)
+            swap(x1, y1, x2, y2);
+        int x = x1;
+        double y = y1;
+        double m = (double) dy/dx;
+
+        if(isInsideCircle(x, y, origX, origY, r) )
+            SetPixel(hdc, x, y, c);
+
+        while(x < x2)
+        {
+            x++;
+            y = y + m;
+
+            if(isInsideCircle(x, y, origX, origY, r) )
+                SetPixel(hdc, x, Round(y), c);
+        }
+    }
+    else
+    {
+        if(y1 > y2)
+            swap(x1, y1, x2, y2);
+
+        double x = x1;
+        int y = y1;
+        double m = (double) dx/dy;
+
+        if(isInsideCircle(x, y, origX, origY, r) )
+            SetPixel(hdc, x, y, c);
+
+        while(y < y2)
+        {
+            y++;
+            x += m;
+
+            if(isInsideCircle(x, y, origX, origY, r) )
+                SetPixel(hdc, Round(x), y, c);
+        }
+    }
+}
+
 
 #endif // CLIPPING_H_INCLUDED

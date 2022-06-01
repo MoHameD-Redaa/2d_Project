@@ -71,7 +71,7 @@ void BresenhamLine(HDC hdc, int x1, int y1, int x2, int y2, COLORREF c)
 
         while(y <= y2)
         {
-            if(d <=0)
+            if(d <= 0)
             {
                 d+= d1;
                 // Check if x2 > x1 then --> x++ or x1 > x2 then --> x--
