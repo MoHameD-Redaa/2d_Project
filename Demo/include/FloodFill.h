@@ -1,7 +1,7 @@
 #ifndef FLOODFILL_H_INCLUDED
 #define FLOODFILL_H_INCLUDED
 #include <stack>
-
+#include "ScreenPixels.h"
 using namespace std;
 
 void IRecursiveFloodFill(HDC hdc, int x, int y, COLORREF borderColor, COLORREF fillColor)
@@ -11,7 +11,7 @@ void IRecursiveFloodFill(HDC hdc, int x, int y, COLORREF borderColor, COLORREF f
     if (color == borderColor || color ==  fillColor)
         return;
 
-    SetPixel(hdc, x, y, fillColor);
+    ScreenPixels::PutPixel(hdc, x, y, fillColor);
 
     IRecursiveFloodFill(hdc, x + 1, y, borderColor, fillColor);
     IRecursiveFloodFill(hdc, x - 1, y, borderColor, fillColor);
@@ -42,7 +42,7 @@ void NonRecursiveFloodFill(HDC hdc, int x, int y, COLORREF borderColor, COLORREF
             continue;
 
 
-        SetPixel(hdc, p.x, p.y, fillColor);
+        ScreenPixels::PutPixel(hdc, p.x, p.y, fillColor);
 
         st.push(Vertex(p.x, p.y - 1));
         st.push(Vertex(p.x, p.y + 1));
@@ -52,5 +52,10 @@ void NonRecursiveFloodFill(HDC hdc, int x, int y, COLORREF borderColor, COLORREF
 
     }
 }
+
+
+
+
+
 
 #endif // FLOODFILL_H_INCLUDED

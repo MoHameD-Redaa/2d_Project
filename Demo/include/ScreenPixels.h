@@ -14,24 +14,29 @@ struct Point
     }
 };
 
+
 class ScreenPixels
 {
-    static vector<Point> pixel;
+	public:
+		static vector<int> pixel;
 
-	static vector<COLORREF> colors;
+		static vector<COLORREF> colors;
 
-	static void PutPixel(HDC hdc, int x, int y, COLORREF c) {
-	    Point p(x,y);
-		pixel.push_back(p);
-		colors.push_back(c);
-		SetPixel(hdc, x, y, c);
-	}
+		static void PutPixel(HDC hdc, int x, int y, COLORREF c) {
+			//Point p(x,y);
+			pixel.push_back(x);
+			pixel.push_back(y);
+			colors.push_back(c);
+			SetPixel(hdc, x, y, c);
+		}
 
-	static void clear() {
-		points.clear();
-		colors.clear();
-	}
+		static void clear() {
+			pixel.clear();
+			colors.clear();
+		}
 
 };
+vector<int> ScreenPixels::pixel;
+vector<COLORREF> ScreenPixels::colors;
 
 #endif // SCREENPIXELS_H_INCLUDED
