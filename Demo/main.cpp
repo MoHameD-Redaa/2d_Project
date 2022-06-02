@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <fstream>
 
 #include"Line.h"
 #include"Circle.h"
@@ -6,7 +7,9 @@
 #include "Curves.h"
 #include "Ellipse.h"
 #include "ConvexFill.h"
+#include "ScreenPixels.h"
 #include <iostream>
+#include <stdio.h>
 
 using namespace std;
 
@@ -17,7 +20,8 @@ using namespace std;
 enum algoType {DDA_Line, BRESN_LINE, param_LINE, D_CIRCLE,EXITE, MIDPELLIPSE, POLARELLIPSE, DIRECTELLIPCE,
               POLAR_CIRCLE, ItPOLAR_CIRCLE, MIDPOINTCIRCLE, MMIDPOINTCIRCLE, RECLIPPING, SQUARCLIP,
               CIRCLECLIP, BEZIERFILL, circleQuarterByLines, HERMITEFILING,
-              recursive_FloodFill, nonRecursive_FloodFill, CONVEXFILL, NONCONVEXFILL};
+              recursive_FloodFill, nonRecursive_FloodFill, CONVEXFILL, NONCONVEXFILL, CLEAR,
+               LOAD, SAVE, COLORPalette, Cardinal_Spline, FILLWITHCIRCLES};
 
 
 
@@ -32,6 +36,8 @@ void createMenu(HWND hwnd) {
     HMENU subMenuEllipse;
     HMENU subMenuClipping;
     HMENU subMenuFilling;
+    HMENU subMenuFile;
+    HMENU subMenuColorPalette;
 
 
     Menubar = CreateMenu();
@@ -40,6 +46,8 @@ void createMenu(HWND hwnd) {
     subMenuClipping = CreateMenu();
     subMenuFilling = CreateMenu();
     subMenuEllipse = CreateMenu();
+    subMenuFile = CreateMenu();
+    subMenuColorPalette = CreateMenu();
 
     AppendMenuW(subMenuCircle, MF_STRING, D_CIRCLE, L"&Direct_Circle");
     AppendMenuW(subMenuCircle, MF_STRING, POLAR_CIRCLE, L"&Polar_Circle");
@@ -72,6 +80,12 @@ void createMenu(HWND hwnd) {
     AppendMenuW(subMenuFilling, MF_STRING, NONCONVEXFILL, L"&nonConvexFilling");
     AppendMenuW(subMenuFilling, MF_STRING, recursive_FloodFill, L"&recursive_FloodFill");
     AppendMenuW(subMenuFilling, MF_STRING, nonRecursive_FloodFill, L"&nonRecursive_FloodFill");
+    AppendMenuW(subMenuFilling, MF_STRING, FILLWITHCIRCLES, L"&fillQ_with_circles");
+
+    // file
+    AppendMenuW(subMenuFile, MF_STRING, SAVE, L"&Save");
+    AppendMenuW(subMenuFile, MF_STRING, LOAD, L"&LOAD");
+    AppendMenuW(subMenuFile, MF_STRING, CLEAR, L"&CLEAR");
 
     // Main menu bar
     AppendMenuW(Menubar, MF_POPUP, (UINT_PTR)subMenuLine, L"&Line");
@@ -79,19 +93,68 @@ void createMenu(HWND hwnd) {
     AppendMenuW(Menubar, MF_POPUP, (UINT_PTR)subMenuClipping, L"&Clipping");
     AppendMenuW(Menubar, MF_POPUP, (UINT_PTR)subMenuFilling, L"&Filling");
     AppendMenuW(Menubar, MF_POPUP, (UINT_PTR)subMenuEllipse, L"&Eillpse");
-    AppendMenuW(Menubar, MF_POPUP, (UINT_PTR)subMenuEllipse, L"&Eillpse");
+    AppendMenuW(Menubar, MF_POPUP, (UINT_PTR)subMenuFile, L"&Screen_Functions");
+    AppendMenuW(Menubar, MF_POPUP, COLORPalette, L"&Color");
+    AppendMenuW(Menubar, MF_STRING, Cardinal_Spline, L"&Cardinal_Spline");
 
     AppendMenuW(Menubar, MF_STRING, EXITE, L"&Exit");
 
     SetMenu(hwnd, Menubar);
 }
 
+UINT_PTR CALLBACK Lpcchookproc(
+    HWND hWnd,
+    UINT message,
+    WPARAM wParam,
+    LPARAM lParam
+)
 
+{
+    if (message == WM_INITDIALOG)
+    {
+        SetWindowPos(hWnd, HWND_TOPMOST, 400, 400, 0, 0, SWP_NOSIZE);
+    }
+    return 0;
+}
+
+void savePixels() {
+	ofstream os;
+	os.open("pixels.txt");
+	auto colorIt = ScreenPixels::colors.begin();
+	for (auto i = ScreenPixels::pixel.begin(); i != ScreenPixels::pixel.end(); i++) {
+		os << *colorIt << " " << *i << " ";
+		i++;
+		colorIt++;
+		os << *i << endl;
+		cout << *i << endl;
+	}
+	os.close();
+}
+
+void loadPixels(HDC hdc) {
+	ifstream iStream("pixels.txt");
+	if (!iStream.is_open())
+	{
+		cout << "File not found" << endl;
+		return;
+	}
+	while (!iStream.eof()) {
+		int x, y;
+		COLORREF c;
+		iStream >> c >> x >> y;
+        if(iStream.eof())
+            break;
+		ScreenPixels::PutPixel(hdc, x, y, c);
+	}
+	iStream.close();
+}
+
+
+static COLORREF currentColor = 0;
 LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 {
 
-    static int x1, y1, x2, y2, cnt=1, shapeNum=-1;
-    
+    static int x1, y1, x2, y2, cnt=1, shapeNum=-1, EA= 150, EB = 100;
     // quarter number
     static int qNum;
     // to know clipping type (point, line, polygon)
@@ -117,7 +180,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
     static bool takeVertexInput = true; 
 
     static vector<POINT> polygonList; // a list contains all polygons' vertices
-
+    static vector<Vector> vecPolygonList;
 	HDC hdc;
 	switch (mcode)
 	{
@@ -132,7 +195,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 	        hdc = GetDC(hwnd);
 
 
-
+            
         
 
             //hdc = GetDC(hwnd);
@@ -150,14 +213,14 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 case D_CIRCLE:
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    DirectCircle(hdc, x1, y1, 100, COLOR);
+                    DirectCircle(hdc, x1, y1, 100, currentColor);
 
                     break;
                 case POLAR_CIRCLE:
                 {
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    PolarCircle(hdc, x1, y1, 100, COLOR);
+                    PolarCircle(hdc, x1, y1, 100, currentColor);
                     break;
                 }
 
@@ -166,7 +229,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 {
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    IterativePolerCircle(hdc, x1, y1, 100, COLOR);
+                    IterativePolerCircle(hdc, x1, y1, 100, currentColor);
                     break;
                 }
 
@@ -174,14 +237,14 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 {
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    MidpointCircle(hdc, x1, y1, 100, COLOR);
+                    MidpointCircle(hdc, x1, y1, 100, currentColor);
                     break;
                 }
                 case MMIDPOINTCIRCLE:
                 {
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    ModifiedMidpointCircle(hdc, x1, y1, 100, COLOR);
+                    ModifiedMidpointCircle(hdc, x1, y1, 100, currentColor);
                     break;
                 }
 
@@ -205,7 +268,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             printf("x2= %d, y2= %d\n", x2, y2);
 
                             hdc = GetDC(hwnd);
-                            BresenhamLine(hdc, x1, y1, x2, y2, RGB(210, 25 , 205));
+                            BresenhamLine(hdc, x1, y1, x2, y2, currentColor);
                             cnt=1;
                             break;
 
@@ -236,7 +299,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             printf("x2= %d, y2= %d\n", x2, y2);
 
                             hdc = GetDC(hwnd);
-                            ParametricLine(hdc, x1, y1, x2, y2, RGB(210, 25 , 205));
+                            ParametricLine(hdc, x1, y1, x2, y2, currentColor);
                             cnt=1;
                             break;
 
@@ -266,7 +329,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             printf("x2= %d, y2= %d\n", x2, y2);
 
                             hdc = GetDC(hwnd);
-                            DDALine(hdc, x1, y1, x2, y2, RGB(210, 25 , 205));
+                            DDALine(hdc, x1, y1, x2, y2, currentColor);
                             cnt=1;
                             break;
 
@@ -280,7 +343,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
 
-                    MidpointEllipse(hdc, x1, y1, 200, 150, COLOR);
+                    MidpointEllipse(hdc, x1, y1, EA, EB, currentColor);
 
                     break;
                 }
@@ -290,7 +353,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
 
-                    PolarEllipse(hdc, x1, y1, 200, 150, COLOR);
+                    PolarEllipse(hdc, x1, y1, EA, EB, currentColor);
 
                     break;
                 }
@@ -300,7 +363,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
 
-                    DirectEllipse(hdc, x1, y1, 200, 150, COLOR);
+                    DirectEllipse(hdc, x1, y1, EA, EB, currentColor);
 
                     break;
                 }
@@ -316,8 +379,8 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             x1 = LOWORD(lp);
                             y1 = HIWORD(lp);
 
-                            hdc = GetDC(hwnd);
-                            PointClip(hdc, x1, y1, p1.x, p1.y, p3.x, p3.y, COLOR);
+                            //hdc = GetDC(hwnd);
+                            PointClip(hdc, x1, y1, p1.x, p1.y, p3.x, p3.y, currentColor);
                             break;
 
                         case 2:
@@ -342,8 +405,8 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                                         printf("x1=%d, y1=%d, x2=%d, y2=%d, p1.x=%d, p1.y=%d, p3.x=%d, p3.y=%d\n",
                                                 x1, y1, x2, y2, p1.x, p1.y, p3.x, p3.y);
 
-                                        hdc = GetDC(hwnd);
-                                        CohenSuth(hdc, x1, y1, x2, y2, p1.x, p1.y, p3.x, p3.y);
+                                        //hdc = GetDC(hwnd);
+                                        CohenSuth(hdc, x1, y1, x2, y2, p1.x, p1.y, p3.x, p3.y, currentColor);
                                         cnt =1;
                                         break;
                                     }
@@ -367,7 +430,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             }
                             else
                             {
-                                PolygonClip(hdc, polygonList, (int)polygonList.size(), p1.x, p1.y, p3.x, p3.y);
+                                PolygonClip(hdc, polygonList, (int)polygonList.size(), p1.x, p1.y, p3.x, p3.y, currentColor);
                                 polygonList.clear();
                             }
                             
@@ -394,7 +457,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             y1 = HIWORD(lp);
 
                             hdc = GetDC(hwnd);
-                            PointClip(hdc, x1, y1, sqP1.x, sqP1.y, sqP3.x, sqP3.y, COLOR);
+                            PointClip(hdc, x1, y1, sqP1.x, sqP1.y, sqP3.x, sqP3.y, currentColor);
                             break;
 
                         case 2:
@@ -420,7 +483,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                                                 x1, y1, x2, y2, sqP1.x, sqP1.y, sqP3.x, sqP3.y);
 
                                         hdc = GetDC(hwnd);
-                                        CohenSuth(hdc, x1, y1, x2, y2, sqP1.x, sqP1.y, sqP3.x, sqP3.y);
+                                        CohenSuth(hdc, x1, y1, x2, y2, sqP1.x, sqP1.y, sqP3.x, sqP3.y, currentColor);
                                         cnt =1;
                                         break;
                                     }
@@ -447,7 +510,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                             
                             if(isInsideCircle(x1, y1, xc, yc, r))
                             {
-                                SetPixel(hdc, x1, y1, COLOR);
+                                ScreenPixels::PutPixel(hdc, x1, y1, currentColor);
                             }
 
                             break;
@@ -470,7 +533,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 
                                         hdc = GetDC(hwnd);
 
-                                        line_CircleWin(hdc, x1, y1, x2, y2, xc, yc, r, COLOR);
+                                        line_CircleWin(hdc, x1, y1, x2, y2, xc, yc, r, currentColor);
                                         cnt =1;
                                         break;
                                     }
@@ -488,7 +551,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 case BEZIERFILL:
                 {
                     printf("filling with bezier\n");
-                    fillingRecWithBeizer(hdc, p1, p2, p3, p4);
+                    fillingRecWithBeizer(hdc, p1, p2, p3, p4, currentColor);
 
                     break;
                 }
@@ -496,7 +559,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 {
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    FillCircleWithLines(hdc, x1, y1, 200, qNum, COLOR);
+                    FillCircleWithLines(hdc, x1, y1, 200, qNum, currentColor);
                     break;
                 }
 
@@ -504,7 +567,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 {
                     x1 = LOWORD(lp);
                     y1 = HIWORD(lp);
-                    FillSquareWithHermit(hdc, x1, y1, 120, COLOR);
+                    FillSquareWithHermit(hdc, x1, y1, 120, currentColor);
                     break;
                 }
                 
@@ -523,7 +586,10 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                     }
                     else
                     {
-                        ConvexFill(hdc, polygonList, polygonList.size(), COLOR);
+                        GeneralPolygonFill(hdc, polygonList, polygonList.size(), currentColor);
+                        
+                        polygonList.clear();
+                        takeVertexInput = true;
                     }
                     
 
@@ -545,7 +611,9 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                     }
                     else
                     {
-                        ConvexFill(hdc, polygonList, polygonList.size(), COLOR);
+                        ConvexFill(hdc, polygonList, polygonList.size(), currentColor);
+                        polygonList.clear();
+                        takeVertexInput = true;
                     }
                     
 
@@ -559,7 +627,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 
                     COLORREF bc = GetPixel(hdc, x1, y1);
 
-                    IRecursiveFloodFill(hdc, x1, y1, bc, RGB(0, 255,0));
+                    IRecursiveFloodFill(hdc, x1, y1, bc, currentColor);
                     break;
                 }
 
@@ -570,11 +638,48 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 
                     
 
-                    NonRecursiveFloodFill(hdc, x1, y1, RGB(0, 0,255), RGB(0, 255,0));
+                    NonRecursiveFloodFill(hdc, x1, y1, currentColor, currentColor);
+                    break;
+                }
+
+
+                case Cardinal_Spline:
+                {
+                    if(takeVertexInput)
+                    {
+                        x1 = LOWORD(lp);
+                        y1 = HIWORD(lp);
+
+                        POINT p;
+                        p.x = x1;
+                        p.y = y1;
+
+                        polygonList.push_back(p);
+                    }
+                    else
+                    {
+                        DrawCardinalSpline(hdc, polygonList, polygonList.size(), currentColor);
+                        
+                        polygonList.clear();
+                        takeVertexInput = true;
+                    }
+                    
+
+                    break;
+                }
+
+                case FILLWITHCIRCLES:
+                {
+                    x1 = LOWORD(lp);
+                    y1 = HIWORD(lp);
+                    fillingQWithCircles(hdc, x1, y1, 150, qNum, currentColor);
+
                     break;
                 }
 
             }
+
+            
 
 
 
@@ -682,7 +787,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 printf("in Rec-Clipping Algo\n");
                 shapeNum = RECLIPPING;
                 //hdc = GetDC(hwnd);
-                drawRec(hdc, p1, p2, p3, p4);
+                drawRec(hdc, p1, p2, p3, p4, currentColor);
                 //ReleaseDC(hwnd, hdc);
 
                 
@@ -700,7 +805,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 cin>>clippingType;
                 printf("you entered: %d\n", clippingType);
 
-                drawRec(hdc, sqP1, sqP2, sqP3, sqP4);
+                drawRec(hdc, sqP1, sqP2, sqP3, sqP4, currentColor);
 
                 
 
@@ -721,7 +826,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 yc=300;
                 r= 200;
 
-                IterativePolerCircle(hdc, xc, yc, r, COLOR);
+                IterativePolerCircle(hdc, xc, yc, r, currentColor);
 
 
                 break;
@@ -734,7 +839,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
                 shapeNum = BEZIERFILL;
                 
 
-                drawRec(hdc, p1, p2, p3, p4);
+                drawRec(hdc, p1, p2, p3, p4, currentColor);
 
                 break;
             }
@@ -786,8 +891,71 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 
                 break;
             }
-
             
+            case CLEAR:
+            {
+                printf("Clear Screen\n");
+                //ReleaseDC(hwnd, hdc);
+
+                InvalidateRect(hwnd, NULL, TRUE);
+				ScreenPixels::clear();
+				cout << "Window is Cleared" << endl;
+
+                break;
+            }
+            
+            case LOAD:
+            {
+                printf("in Load Screen\n");
+                hdc = GetDC(hwnd);
+                loadPixels(hdc);
+
+                break;
+            }
+
+            case SAVE:
+            {
+                printf("in Save Screen\n");
+                savePixels();
+
+                break;
+            }
+            
+            case COLORPalette:
+            {
+                CHOOSECOLOR cc;                 // common dialog box structure 
+                static COLORREF acrCustClr[16]; // array of custom colors 
+                HBRUSH hbrush;                  // brush handle
+                static DWORD rgbCurrent;        // initial color selection
+                // Initialize CHOOSECOLOR 
+                ZeroMemory(&cc, sizeof(cc));
+                cc.lStructSize = sizeof(cc);
+                cc.lpCustColors = (LPDWORD)acrCustClr;
+                cc.Flags = CC_FULLOPEN | CC_RGBINIT | CC_ENABLEHOOK;
+                cc.lpfnHook = Lpcchookproc;
+                ChooseColor(&cc) == TRUE;
+                currentColor = cc.rgbResult;
+
+                break;
+            }
+
+            case Cardinal_Spline:
+            {
+                printf("in Cardinal_Spline\n");
+                shapeNum = Cardinal_Spline;
+
+                break;
+            }
+
+            case FILLWITHCIRCLES:
+            {
+                printf("in FILLWITHCIRCLES\n");
+                shapeNum = FILLWITHCIRCLES;
+                
+                printf("Enter quarter number (1-4): ");
+                cin>>qNum;
+                break;
+            }
 
             case EXITE:
                 DestroyWindow(hwnd);
