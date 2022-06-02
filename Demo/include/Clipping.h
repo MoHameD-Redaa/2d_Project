@@ -4,21 +4,19 @@
 using namespace std;
 
 #include "Line.h"
+#include "ScreenPixels.h"
 #define COLOR RGB(0, 0, 255)
 
 #ifndef CLIPPING_H_INCLUDED
 #define CLIPPING_H_INCLUDED
 
-struct Point
-{
-    int x, y;
-};
+
 
 void PointClip(HDC hdc, int x,int y,int xleft,int ytop,int xright,int ybottom,COLORREF color)
 {
     if(x>=xleft && x<= xright && y<=ytop && y>=ybottom)
     {
-        SetPixel(hdc,x,y,color);
+        ScreenPixels::PutPixel(hdc,x,y,color);
     }
 
 }
@@ -51,7 +49,7 @@ void HIntersect(double xs,double ys,double xe,double ye,int y,double *xi,double 
     *xi=xs+(y-ys)*(xe-xs)/(ye-ys);
 }
 
-void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright,int ybottom)
+void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright,int ybottom, COLORREF c)
 {
     double x1=xs,y1=ys,x2=xe,y2=ye;
     OutCode out1=GetOutCode(x1,y1,xleft,ytop,xright,ybottom);
@@ -62,7 +60,7 @@ void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright
         if(out1.All & out2.All) return;
         if(out1.All == 0 && out2.All == 0)
         {
-            DDALine(hdc, x2, y2, x1, y1, COLOR);
+            DDALine(hdc, x2, y2, x1, y1, c);
             return;
         }
         double xi,yi;
@@ -90,12 +88,12 @@ void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright
 
 }
 
-void drawRec(HDC hdc, Point p1, Point p2, Point p3, Point p4)
+void drawRec(HDC hdc, Point p1, Point p2, Point p3, Point p4, COLORREF c)
 {
-    BresenhamLine(hdc, p1.x, p1.y, p2.x, p2.y, COLOR);
-    BresenhamLine(hdc, p2.x, p2.y, p3.x, p3.y, COLOR);
-    BresenhamLine(hdc, p3.x, p3.y, p4.x, p4.y, COLOR);
-    BresenhamLine(hdc, p4.x, p4.y, p1.x, p1.y, COLOR);
+    BresenhamLine(hdc, p1.x, p1.y, p2.x, p2.y, c);
+    BresenhamLine(hdc, p2.x, p2.y, p3.x, p3.y, c);
+    BresenhamLine(hdc, p3.x, p3.y, p4.x, p4.y, c);
+    BresenhamLine(hdc, p4.x, p4.y, p1.x, p1.y, c);
 }
 
 
@@ -173,7 +171,7 @@ Vertex HIntersect(Vertex &v1, Vertex &v2, int yedge)
     return res;
 }
 
-void PolygonClip(HDC hdc, vector<POINT> p, int n, int xleft, int ytop, int xright, int ybottom)
+void PolygonClip(HDC hdc, vector<POINT> p, int n, int xleft, int ytop, int xright, int ybottom, COLORREF c)
 {
     VertexList vlist;
     for(int i=0;i<n;i++)
@@ -190,7 +188,7 @@ void PolygonClip(HDC hdc, vector<POINT> p, int n, int xleft, int ytop, int xrigh
     for (int i = 0; i < (int)vlist.size(); i++)
     {
         Vertex v2 = vlist[i];
-        DDALine(hdc, Round(v1.x), Round(v1.y), Round(v2.x), Round(v2.y), COLOR);
+        DDALine(hdc, Round(v1.x), Round(v1.y), Round(v2.x), Round(v2.y), c);
         v1 = v2;
     }
 }
@@ -220,7 +218,7 @@ void line_CircleWin(HDC hdc, int x1, int y1, int x2, int y2, int origX, int orig
         double m = (double) dy/dx;
 
         if(isInsideCircle(x, y, origX, origY, r) )
-            SetPixel(hdc, x, y, c);
+            ScreenPixels::PutPixel(hdc, x, y, c);
 
         while(x < x2)
         {
@@ -228,7 +226,7 @@ void line_CircleWin(HDC hdc, int x1, int y1, int x2, int y2, int origX, int orig
             y = y + m;
 
             if(isInsideCircle(x, y, origX, origY, r) )
-                SetPixel(hdc, x, Round(y), c);
+                ScreenPixels::PutPixel(hdc, x, Round(y), c);
         }
     }
     else
@@ -241,7 +239,7 @@ void line_CircleWin(HDC hdc, int x1, int y1, int x2, int y2, int origX, int orig
         double m = (double) dx/dy;
 
         if(isInsideCircle(x, y, origX, origY, r) )
-            SetPixel(hdc, x, y, c);
+            ScreenPixels::PutPixel(hdc, x, y, c);
 
         while(y < y2)
         {
@@ -249,7 +247,7 @@ void line_CircleWin(HDC hdc, int x1, int y1, int x2, int y2, int origX, int orig
             x += m;
 
             if(isInsideCircle(x, y, origX, origY, r) )
-                SetPixel(hdc, Round(x), y, c);
+                ScreenPixels::PutPixel(hdc, Round(x), y, c);
         }
     }
 }
