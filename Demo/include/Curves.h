@@ -42,19 +42,19 @@ void DrawHermiteCurve(HDC hdc,Vector& p1, Vector& T1, Vector& p2, Vector& T2, CO
         double x = a0 + a1*t + a2*t2 + a3*t3;
         double y = b0 + b1*t + b2*t2 + b3*t3;
 
-        SetPixel(hdc, Round(x), Round(y), c);
+        ScreenPixels::PutPixel(hdc, Round(x), Round(y), c);
     }
 }
 
 
-void DrawBezierCurve(HDC hdc,Vector& P0,Vector& P1,Vector& P2,Vector& P3,int numpoints)
+void DrawBezierCurve(HDC hdc,Vector& P0,Vector& P1,Vector& P2,Vector& P3,COLORREF c)
 {
     Vector T0((double)3*(P1.x- P0.x),3*((double)P1.y-P0.y));
     Vector T1(3*((double)P3.x-P2.x),3*((double)P3.y-P2.y));
-    DrawHermiteCurve(hdc,P0,T0,P3,T1,numpoints);
+    DrawHermiteCurve(hdc,P0,T0,P3,T1,c);
 }
 
-void fillingRecWithBeizer(HDC hdc, Point p1, Point p2, Point p3, Point p4)
+void fillingRecWithBeizer(HDC hdc, Point p1, Point p2, Point p3, Point p4, COLORREF c)
 {
     printf("p1.y= %d, p4.y= %d\n", p1.y, p4.y);
     for (int i = p4.y; i < p1.y; i++)
@@ -79,7 +79,7 @@ void fillingRecWithBeizer(HDC hdc, Point p1, Point p2, Point p3, Point p4)
         t2[0] = mid[0] - 40;
         t2[1] = i + 55;
 
-        DrawBezierCurve(hdc, v1, t1, t2, v2, 2);
+        DrawBezierCurve(hdc, v1, t1, t2, v2, c);
     }
     
 }
@@ -98,6 +98,26 @@ void DrawCardinalSpline(HDC hdc,vector<POINT> P, int n, COLORREF c)
     }
 }
 
+/* void DrawCardinalSpline(HDC hdc,vector<Vector> P, int n, COLORREF c)
+{
+    Vector T[n];
+    Vector T0(0.5*(P[1].x - P[0].x), 0.5*(P[1].y - P[0].y));
+    T[0] = T0;
+    Vector T1(0.5*(P[n-1].x - P[n-2].x), 0.5*(P[n-1].y - P[n-2].y));
+    T[1] = T1;
+
+    for(int i = 1; i < n-1; i++)
+    {
+        Vector t(0.5*(P[i+1].x - P[i-1].x), 0.5*(P[i+1].y - P[i-1].y));
+        T[i] = t;
+
+    }
+    for(int i = 0; i < n-1; i++)
+    {
+        DrawHermiteCurve(hdc, P[i], T[i], P[i+1], T[i+1], c);
+    }
+}
+ */
 
 
 void FillSquareWithHermit(HDC hdc, int x1, int y1, int length, COLORREF c) {
