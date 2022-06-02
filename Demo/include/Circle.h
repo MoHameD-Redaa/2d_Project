@@ -1,26 +1,26 @@
 #ifndef CIRCLE_H
 #define CIRCLE_H
 #include"Line.h"
-
+#include "ScreenPixels.h"
 
 void Draw8Points(HDC hdc, int xc, int yc, int x, int y, COLORREF c)
 {
 
-    SetPixel(hdc,xc + x, yc + y,c);
+    ScreenPixels::PutPixel(hdc,xc + x, yc + y,c);
 
-    SetPixel(hdc,xc + x, yc - y,c);
+    ScreenPixels::PutPixel(hdc,xc + x, yc - y,c);
 
-    SetPixel(hdc,xc - x, yc - y,c);
+    ScreenPixels::PutPixel(hdc,xc - x, yc - y,c);
 
-    SetPixel(hdc,xc - x, yc + y,c);
+    ScreenPixels::PutPixel(hdc,xc - x, yc + y,c);
 
-    SetPixel(hdc,xc + y, yc + x,c);
+    ScreenPixels::PutPixel(hdc,xc + y, yc + x,c);
 
-    SetPixel(hdc,xc + y, yc - x,c);
+    ScreenPixels::PutPixel(hdc,xc + y, yc - x,c);
 
-    SetPixel(hdc,xc - y, yc - x,c);
+    ScreenPixels::PutPixel(hdc,xc - y, yc - x,c);
 
-    SetPixel(hdc,xc - y, yc + x,c);
+    ScreenPixels::PutPixel(hdc,xc - y, yc + x,c);
 
 }
 
@@ -144,15 +144,15 @@ void FillCircleQuarter(HDC hdc, int xc, int yc, int x, int y, int quarter_num, C
         DDALine(hdc, xc, yc, xc + y, yc + x, c);
     }
 
-    SetPixel(hdc,xc + x, yc + y,c);
-    SetPixel(hdc,xc + x, yc - y,c);
-    SetPixel(hdc,xc - x, yc - y,c);
-    SetPixel(hdc,xc - x, yc + y,c);
+    ScreenPixels::PutPixel(hdc,xc + x, yc + y,c);
+    ScreenPixels::PutPixel(hdc,xc + x, yc - y,c);
+    ScreenPixels::PutPixel(hdc,xc - x, yc - y,c);
+    ScreenPixels::PutPixel(hdc,xc - x, yc + y,c);
 
-    SetPixel(hdc,xc + y, yc + x,c);
-    SetPixel(hdc,xc + y, yc - x,c);
-    SetPixel(hdc,xc - y, yc - x,c);
-    SetPixel(hdc,xc - y, yc + x,c);
+    ScreenPixels::PutPixel(hdc,xc + y, yc + x,c);
+    ScreenPixels::PutPixel(hdc,xc + y, yc - x,c);
+    ScreenPixels::PutPixel(hdc,xc - y, yc - x,c);
+    ScreenPixels::PutPixel(hdc,xc - y, yc + x,c);
 
 }
 
@@ -183,6 +183,88 @@ void FillCircleWithLines(HDC hdc, int xc, int yc, int r, int quarter_num, COLORR
         FillCircleQuarter(hdc, xc, yc, x, y, quarter_num, c);
     }
 
+
+}
+
+void fillingQWithCircles(HDC hdc, int xc, int yc, int r, int n, COLORREF c)
+{
+    double x = r ;
+    double y = 0, x1;
+    double dtheta = 1.0 / r;
+    double sdtheta = sin(dtheta);
+    double cdtheta = cos(dtheta);
+    Draw8Points(hdc, xc, yc, x, y, c);
+    while(x > y)
+    {
+        x1 = x * cdtheta - y * sdtheta;
+        y = x * sdtheta + y * cdtheta;
+        x = x1;
+        Draw8Points(hdc, xc, yc, Round(x), Round(y), c);
+    }
+
+    int xS = 1, yS = 1;
+
+    if(n==2)
+        xS = -1;
+    else if(n==3)
+    {
+        xS = -1;
+        yS = -1;
+    }
+    else
+        yS= -1;
+
+
+    int tmpR = 5;
+
+    while(tmpR < r)
+    {
+        double x = tmpR ;
+        double y = 0, x1;
+        double dtheta = 1.0 / tmpR;
+        double sdtheta = sin(dtheta);
+        double cdtheta = cos(dtheta);
+        
+        while(x > y)
+        {
+            x1 = x * cdtheta - y * sdtheta;
+            y = x * sdtheta + y * cdtheta;
+            x = x1;
+
+
+
+            if(n == 1)
+            {
+                ScreenPixels::PutPixel(hdc,xc + (x), yc - (y),c);
+                ScreenPixels::PutPixel(hdc,xc + (y) , yc - (x),c);
+                
+            }
+            else if(n == 2)
+            {
+                ScreenPixels::PutPixel(hdc,xc - (x), yc - (y),c);
+                ScreenPixels::PutPixel(hdc,xc - (y) , yc - (x),c);
+
+            }
+            else if(n == 3)
+            {
+                ScreenPixels::PutPixel(hdc,xc - (x), yc + (y),c);
+                ScreenPixels::PutPixel(hdc,xc - (y) , yc + (x),c);
+            }
+            else if(n == 4)
+            {
+                ScreenPixels::PutPixel(hdc,xc + (x), yc + (y),c);
+                ScreenPixels::PutPixel(hdc,xc + (y) , yc + (x),c);
+            }
+
+            
+            //Draw8Points(hdc, xc, yc, Round(x), Round(y), c);
+        }
+
+        tmpR += 5;
+    }
+
+    
+    
 }
 
 
